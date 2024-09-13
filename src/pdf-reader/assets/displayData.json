@@ -4,8 +4,8 @@
   "supportUrl": "",
   "localizedDisplayInfo": {
     "en": {
-      "displayName": "Paranext Extension Template",
-      "shortSummary": "Base template for a Platform.Bible Extension",
+      "displayName": "PDF Reader",
+      "shortSummary": "Extension that supports pdf format",
       "description": "assets/descriptions/description-en.md"
     }
   }
