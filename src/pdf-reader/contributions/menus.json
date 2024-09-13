@@ -2,7 +2,15 @@
   "mainMenu": {
     "columns": {},
     "groups": {},
-    "items": []
+    "items": [
+      {
+        "label": "%mainMenu_openPDFReader%",
+        "localizeNotes": "Application main menu > Project > Open PDF Reader...",
+        "group": "platform.projectProjects",
+        "order": -10001,
+        "command": "pdfReader.openPDFReader"
+      }
+    ]
   },
   "defaultWebViewTopMenu": {
     "columns": {},

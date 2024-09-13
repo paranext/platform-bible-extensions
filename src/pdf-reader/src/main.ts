@@ -10,6 +10,7 @@ import pdfReaderReact from './pdf-reader.web-view?inline';
 import pdfReaderReactStyles from './pdf-reader.web-view.scss?inline';
 
 const PDF_VIEWER_WEB_VIEW_TYPE = 'pdfReader.react';
+const PDF_VIEWER_WEB_VIEW_SIZE = { width: 600, height: 475 };
 
 const pdfViewerWebViewProvider: IWebViewProvider = {
   async getWebView(
@@ -39,7 +40,20 @@ export async function activate(context: ExecutionActivationContext) {
     pdfViewerWebViewProvider,
   );
 
-  context.registrations.add(await pdfReaderWebViewProviderPromise);
+  const openPDFReaderWebViewCommandPromise = papi.commands.registerCommand(
+    'pdfReader.openPDFReader',
+    async () => {
+      return papi.webViews.getWebView(PDF_VIEWER_WEB_VIEW_TYPE, {
+        type: 'float',
+        floatSize: PDF_VIEWER_WEB_VIEW_SIZE,
+      });
+    },
+  );
+
+  context.registrations.add(
+    await pdfReaderWebViewProviderPromise,
+    await openPDFReaderWebViewCommandPromise,
+  );
 }
 
 export async function deactivate() {
