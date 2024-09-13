@@ -31,6 +31,8 @@
     "react-dom": ">=18.2.0"
   },
   "dependencies": {
+    "@pdfslick/core": "^1.5.1",
+    "@pdfslick/react": "^1.5.1",
     "@sillsdev/scripture": "^2.0.1",
     "platform-bible-utils": "file:../../../paranext-core/lib/platform-bible-utils"
   },
