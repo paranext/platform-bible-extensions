@@ -34,7 +34,8 @@
     "@pdfslick/core": "^1.5.1",
     "@pdfslick/react": "^1.5.1",
     "@sillsdev/scripture": "^2.0.1",
-    "platform-bible-utils": "file:../../../paranext-core/lib/platform-bible-utils"
+    "platform-bible-utils": "file:../../../paranext-core/lib/platform-bible-utils",
+    "react-pdf": "^9.1.0"
   },
   "devDependencies": {
     "@swc/core": "^1.4.11",

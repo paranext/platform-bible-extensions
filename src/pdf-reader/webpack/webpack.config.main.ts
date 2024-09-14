@@ -26,7 +26,6 @@ const configMain: webpack.Configuration = merge(configBase, {
     },
     // Empty the output folder before building
     clean: true,
-    publicPath: 'auto',
   },
   resolve: {
     plugins: [
