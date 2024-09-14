@@ -1,7 +1,26 @@
 import { useState } from 'react';
 import { Button } from 'platform-bible-react';
-// import '@pdfslick/react/dist/pdf_viewer.css?inline';
-// import PDFViewerComponent from './pdf-viewer.component';
+import pdfjs from 'pdfjs-dist';
+// import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+import PDFViewer from './pdf-viewer.component';
+
+// if (typeof Promise.withResolvers === 'undefined') {
+//   if (window)
+//     // @ts-expect-error This does not exist outside of polyfill which this is doing
+//     window.Promise.withResolvers = function () {
+//       let resolve;
+//       let reject;
+//       const promise = new Promise((res, rej) => {
+//         resolve = res;
+//         reject = rej;
+//       });
+//       return { promise, resolve, reject };
+//     };
+// }
+
+// Set the worker URL for PDF.js
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
+// pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 declare global {
   interface Window {
@@ -10,7 +29,7 @@ declare global {
 }
 
 globalThis.webViewComponent = function PDFReaderWebView() {
-  const [filePath, setFilePath] = useState<string>();
+  const [fileURL, setFileURL] = useState<string>();
 
   const openFilePicker = async () => {
     try {
@@ -23,23 +42,34 @@ globalThis.webViewComponent = function PDFReaderWebView() {
 
       // Show the file picker
       const [fileHandle] = await window.showOpenFilePicker({
+        types: [
+          {
+            description: 'PDF Files',
+            accept: { 'application/pdf': ['.pdf'] },
+          },
+        ],
         multiple: false,
       });
 
+      // Get the file from the file handle
       const newFile = await fileHandle.getFile();
-      const fileURL = URL.createObjectURL(newFile);
-      setFilePath(fileURL);
+
+      // Get URL for file
+      const fileUrl = URL.createObjectURL(newFile);
+      setFileURL(fileUrl);
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error picking file:', error);
+      console.error('Error selecting file:', error);
     }
   };
 
   return (
-    <div className="pdf-reader-web-view">
-      <Button onClick={openFilePicker}>Open File</Button>
-      {/* {filePath && <PDFViewerComponent pdfFilePath={filePath} />} */}
-      <p>{filePath}</p>
+    <div className="pdf-reader-web-view pdfslick">
+      <Button onClick={openFilePicker}>Choose PDF...</Button>
+      <div className="pdf-viewer">
+        {fileURL && <PDFViewer pdfFilePath={fileURL} />}
+        {/* <PDFNavigation {...{ usePDFSlickStore }} /> */}
+      </div>
     </div>
   );
 };
