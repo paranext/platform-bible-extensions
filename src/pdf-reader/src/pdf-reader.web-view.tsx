@@ -59,7 +59,7 @@ globalThis.webViewComponent = function PDFReaderWebView() {
       <Button onClick={openFilePicker}>Open File</Button>
 
       <PdfReaderWithReact pdfFilePath={tempFile} />
-      <p>{filePath}</p>
+      {/* <p>{filePath}</p> */}
     </div>
   );
 };

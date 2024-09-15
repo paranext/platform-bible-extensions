@@ -1,7 +1,7 @@
-import { logger } from '@papi/frontend';
 import { Button } from 'platform-bible-react';
 import { useState } from 'react';
-import { Document, Page } from 'react-pdf';
+import { Document, Page, Outline } from 'react-pdf';
+import { OnItemClickArgs } from 'react-pdf/dist/cjs/shared/types';
 
 type PDFViewerComponentProps = {
   pdfFilePath: File | undefined;
@@ -11,51 +11,51 @@ export default function PdfReaderWithReact({ pdfFilePath }: PDFViewerComponentPr
   const [numPages, setNumPages] = useState<number>();
   const [pageNumber, setPageNumber] = useState<number>(1);
 
-  // eslint-disable-next-line @typescript-eslint/no-shadow
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
-    logger.debug(`Entered here in the onload ${numPages} ${pageNumber}`);
-    setNumPages(numPages);
-    setPageNumber(1);
-  }
+  const onDocumentLoadSuccess = (numOfPages: number) => {
+    setNumPages(numOfPages);
+    //  setPageNumber(1);
+  };
 
-  function changePage(offset: number) {
+  const changePage = (offset: number) => {
     setPageNumber((prevPageNumber) => prevPageNumber + offset);
-  }
+  };
 
-  function previousPage() {
+  const previousPage = () => {
     changePage(-1);
-  }
+  };
 
-  function nextPage() {
+  const nextPage = () => {
     changePage(1);
+  };
+
+  function onItemClick({ pageNumber: itemPageNumber }: OnItemClickArgs) {
+    setPageNumber(itemPageNumber);
   }
 
   return (
     <div>
       <div>
-        <Document file={pdfFilePath} onLoadSuccess={(pdf) => onDocumentLoadSuccess(pdf)}>
-          <Page
-            pageNumber={pageNumber}
-            renderTextLayer={false}
-            renderAnnotationLayer={false}
-            // customTextRenderer={false}
-          />
+        <Document file={pdfFilePath} onLoadSuccess={(pdf) => onDocumentLoadSuccess(pdf.numPages)}>
+          <Outline onItemClick={(itemClicked) => onItemClick(itemClicked)} />
+          <Page pageNumber={pageNumber} renderTextLayer={false} renderAnnotationLayer={false} />
         </Document>
-        {/* <p>
-          Page {pageNumber} of {numPages}
-        </p> */}
       </div>
       <div>
-        <p>
-          Page {pageNumber || (numPages ? 1 : '--')} of {numPages || '--'}
-        </p>
-        <button type="button" disabled={pageNumber <= 1} onClick={previousPage}>
-          Previous
-        </button>
+        {pdfFilePath && pdfFilePath.name.length > 0 && (
+          <>
+            <p>
+              Page {pageNumber || (numPages ? 1 : '--')} of {numPages || '--'}
+            </p>
+
+            <Button disabled={pageNumber <= 1} onClick={previousPage}>
+              Previous
+            </Button>
+          </>
+        )}
         {numPages && (
-          <button type="button" disabled={pageNumber >= numPages} onClick={nextPage}>
+          <Button disabled={pageNumber >= numPages} onClick={nextPage} dir="rtl">
             Next
-          </button>
+          </Button>
         )}
       </div>
     </div>
