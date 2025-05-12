@@ -1,4 +1,4 @@
-// #region shared with https://github.com/paranext/paranext-extension-template/blob/main/.eslintrc.js
+// #region shared with https://github.com/paranext/paranext-multi-extension-template/blob/main/.eslintrc.cjs
 
 module.exports = {
   extends: [

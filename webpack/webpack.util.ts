@@ -3,7 +3,6 @@ import path from 'path';
 import { glob } from 'glob';
 import fs from 'fs';
 import { Pattern } from 'copy-webpack-plugin';
-import { LIBRARY_TYPE } from './webpack.config.base';
 
 // #region shared with https://github.com/paranext/paranext-extension-template/blob/main/webpack/webpack.util.ts
 
@@ -27,6 +26,16 @@ export const webViewTempDir = 'temp-build';
 
 /** Folder containing the built extension files */
 export const outputFolder = 'dist';
+
+/**
+ * The module format of library we want webpack to use for externals and create for our extensions
+ *
+ * @see webpack.Configuration['externalsType'] for info about external import format
+ * @see webpack.LibraryOptions['type'] for info about library format
+ */
+// commonjs-static formats the code to export everything on module.exports.<export_name> so it works
+// well in cjs or esm https://webpack.js.org/configuration/output/#type-commonjs-static
+export const LIBRARY_TYPE: NonNullable<webpack.Configuration['externalsType']> = 'commonjs-static';
 
 /** Get a list of TypeScript WebView files to bundle. Path relative to project root */
 function getWebViewTsxPaths() {
@@ -133,7 +142,9 @@ const staticFiles: {
   { from: '<project_settings>', noErrorOnMissing: true },
   // Copy the localized strings JSON file into the output folder based on its listing in `manifest.localizedStrings`
   { from: '<localized_strings>', noErrorOnMissing: true },
-  // Copy the display data JSON file into the output folder based on its listing in `manifest.localizedStrings`
+  // Copy the themes JSON file into the output folder based on its listing in `manifest.themes`
+  { from: '<themes>', noErrorOnMissing: true },
+  // Copy the display data JSON file into the output folder based on its listing in `manifest.displayData`
   { from: '<display_data>', noErrorOnMissing: true },
 ];
 
@@ -146,6 +157,7 @@ function getStaticFileName(staticFile: string, extensionInfo: ExtensionInfo) {
     .replace(/<settings>/g, extensionInfo.settings ?? '')
     .replace(/<project_settings>/g, extensionInfo.projectSettings ?? '')
     .replace(/<localized_strings>/g, extensionInfo.localizedStrings ?? '')
+    .replace(/<themes>/g, extensionInfo.themes ?? '')
     .replace(/<display_data>/g, extensionInfo.displayData ?? '');
 }
 
@@ -240,14 +252,12 @@ export function getMainEntries(extensions: ExtensionInfo[]): webpack.EntryObject
  * Get the path to the extension directory relative to root
  *
  * @param extensionDirName The name of the directory that this extension is in
+ * @param shouldBeOSIndependent If true, use the OS-independent path separator. This path needs to
+ *   be OS-independent in git commands identifying the git subtree for this extension
  * @returns Path to the extension to format relative to root
- *
- *   WARNING: This does not use the operating system's path separator because it needs to be
- *   consistent for use in git commands. If you need an OS-dependent path separator, make a new
- *   path
  */
-export function getExtensionPathOSIndependent(extensionDirName: string) {
-  return `${sourceFolder}/${extensionDirName}`;
+export function getExtensionPath(extensionDirName: string, shouldBeOSIndependent: boolean) {
+  return `${sourceFolder}${shouldBeOSIndependent ? '/' : path.sep}${extensionDirName}`;
 }
 
 // #endregion
@@ -277,8 +287,8 @@ type ExtensionManifest = {
    *
    * If not provided, Platform.Bible will look in the following locations:
    *
-   * 1. `<extension_name>.d.ts`
-   * 2. `<extension_name><other_stuff>.d.ts`
+   * 1. `<extension-name>.d.ts` (kebab-case version of the extension name)
+   * 2. `<extension-name><other_stuff>.d.ts` (kebab-case version of the extension name)
    * 3. `index.d.ts`
    *
    * See [Extension Anatomy - Type Declaration
@@ -294,6 +304,8 @@ type ExtensionManifest = {
   projectSettings?: string;
   /** Path to the JSON file that defines the localized strings this extension is adding. */
   localizedStrings?: string;
+  /** Path to the JSON file that defines the themes this extension is adding. */
+  themes?: string;
   /** Path to the JSON file that defines the localized display data this extension is adding. */
   displayData?: string;
   activationEvents: string[];
@@ -303,6 +315,12 @@ type ExtensionManifest = {
 export type ExtensionInfo = ExtensionManifest & {
   /** The name of the directory that this extension is in */
   dirName: string;
+  /**
+   * Path to the extension directory relative to root
+   *
+   * This uses the operating system's path separator
+   */
+  dirPath: string;
   /**
    * Path to the extension directory relative to root
    *
@@ -321,7 +339,51 @@ export type ExtensionInfo = ExtensionManifest & {
    * do not build anything but just copy the folder
    */
   shouldCopyOnly?: boolean;
+  /** Path to the manifest file */
+  manifestPath: string;
+  /** The original manifest straight out of the file and run through `JSON.parse` */
+  manifest: Readonly<ExtensionManifest>;
 };
+
+/** Cached list of extension folder names */
+let extensionFolderNamesCached: string[] | undefined;
+
+/**
+ * Get a list of the names of the folders with extensions in them (in the source folder)
+ *
+ * Synchronous version of `getExtensionFolderNames`
+ */
+export function getExtensionFolderNamesSync(): string[] {
+  if (extensionFolderNamesCached) return extensionFolderNamesCached;
+
+  extensionFolderNamesCached = fs
+    .readdirSync(sourceFolder, {
+      withFileTypes: true,
+    })
+    .filter((dirEntry) => dirEntry.isDirectory())
+    .map((dirEntry) => dirEntry.name);
+
+  return extensionFolderNamesCached;
+}
+
+/**
+ * Get a list of the names of the folders with extensions in them (in the source folder)
+ *
+ * Asynchronous version of `getExtensionFolderNamesSync`
+ */
+export async function getExtensionFolderNames(): Promise<string[]> {
+  if (extensionFolderNamesCached) return extensionFolderNamesCached;
+
+  extensionFolderNamesCached = (
+    await fs.promises.readdir(sourceFolder, {
+      withFileTypes: true,
+    })
+  )
+    .filter((dirEntry) => dirEntry.isDirectory())
+    .map((dirEntry) => dirEntry.name);
+
+  return extensionFolderNamesCached;
+}
 
 /**
  * Gets a list of the extension folders and their respective entry files
@@ -330,13 +392,7 @@ export type ExtensionInfo = ExtensionManifest & {
  */
 export async function getExtensions(): Promise<ExtensionInfo[]> {
   // Get names of each folder in the source folder
-  const extensionFolderNames = (
-    await fs.promises.readdir(sourceFolder, {
-      withFileTypes: true,
-    })
-  )
-    .filter((dirEntry) => dirEntry.isDirectory())
-    .map((dirEntry) => dirEntry.name);
+  const extensionFolderNames = await getExtensionFolderNames();
 
   // Return extension info for each extension folder
   // We're filtering out the `undefined` entries, so assert that there is no `undefined`
@@ -345,11 +401,9 @@ export async function getExtensions(): Promise<ExtensionInfo[]> {
     await Promise.all(
       extensionFolderNames.map(async (extensionFolderName): Promise<ExtensionInfo | undefined> => {
         let extensionManifestJson: string;
+        const manifestPath = path.join(sourceFolder, extensionFolderName, 'manifest.json');
         try {
-          extensionManifestJson = await fs.promises.readFile(
-            path.join(sourceFolder, extensionFolderName, 'manifest.json'),
-            'utf8',
-          );
+          extensionManifestJson = await fs.promises.readFile(manifestPath, 'utf8');
         } catch {
           // This folder doesn't have a manifest.json, so it must not be an extension. Skip it
           return undefined;
@@ -372,18 +426,24 @@ export async function getExtensions(): Promise<ExtensionInfo[]> {
           ? {
               ...extensionManifest,
               dirName: extensionFolderName,
-              dirPathOSIndependent: getExtensionPathOSIndependent(extensionFolderName),
+              dirPath: getExtensionPath(extensionFolderName, false),
+              dirPathOSIndependent: getExtensionPath(extensionFolderName, true),
               entryFileName: path.parse(extensionManifest.main).name,
               entryFilePath: path.join(sourceFolder, extensionFolderName, extensionManifest.main),
               version: extensionManifest.version,
+              manifestPath,
+              manifest: extensionManifest,
             }
           : {
               ...extensionManifest,
               dirName: extensionFolderName,
-              dirPathOSIndependent: getExtensionPathOSIndependent(extensionFolderName),
+              dirPath: getExtensionPath(extensionFolderName, false),
+              dirPathOSIndependent: getExtensionPath(extensionFolderName, true),
               entryFileName: '',
               entryFilePath: '',
               version: extensionManifest.version,
+              manifestPath,
+              manifest: extensionManifest,
               shouldCopyOnly: true,
             };
       }),
