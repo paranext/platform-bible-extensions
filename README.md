@@ -2,10 +2,6 @@
 
 Template for creating multiple Platform.Bible extensions in one repo
 
-## Template Info
-
-# This is a webpack project template pre-configured to build an arbitrary number of Platform.Bible extensions. It contains the bare minimum of what a multi-extension repo needs. Note that many of the files mentioned in [Summary](#summary) are not present in this template because they describe extension code which must be added to this template. For inspiration on what extensions in a multi-extension repo could look like, refer to any repo forked from this template. An example would be the [paranext-sample-extensions]() [MISSING! PLEASE ADD WHEN AVAILABLE].
-
 <!-- <!-- Opening comment tag for Template Info Section. Ignore this for now. More info in [Hide Template Info](#hide-template-info). -->
 
 ## Template Info
@@ -27,10 +23,7 @@ To make the process of customizing from the template as smooth as possible, we r
 
 #### Replace placeholders
 
-- At the top of this `README.md`:
-
-  - # Replace the first line `# paranext-multi-extension-template` with `# your-extension-repo-name`
-    For your extension name, we recommend that you use [lowerCamelCase](https://developer.mozilla.org/en-US/docs/Glossary/Camel_case) in some contexts and [kebab-case](https://developer.mozilla.org/en-US/docs/Glossary/Kebab_case) in other contexts. We generally recommend lowerCamelCase when using the name in code (like making a new command on the PAPI, for example), and we recommend kebab-case when using the name in relation to the file system, the repository, `npm`, and the extension's `.d.ts` types module. The following instructions are written accordingly.
+For your extension name, we recommend that you use [lowerCamelCase](https://developer.mozilla.org/en-US/docs/Glossary/Camel_case) in some contexts and [kebab-case](https://developer.mozilla.org/en-US/docs/Glossary/Kebab_case) in other contexts. We generally recommend lowerCamelCase when using the name in code (like making a new command on the PAPI, for example), and we recommend kebab-case when using the name in relation to the file system, the repository, `npm`, and the extension's `.d.ts` types module. The following instructions are written accordingly.
 
 - At the top of this `README.md`:
 
@@ -39,9 +32,8 @@ To make the process of customizing from the template as smooth as possible, we r
 
 - In `package.json`:
 
-- # Replace `"paranext-multi-extension-template"` with `"your-extension-repo-name"`
-- Replace `paranext-multi-extension-template` with `your-extension-repo-name` (kebab-case)
-- Update ownership information and other relevant fields as desired
+  - Replace `paranext-multi-extension-template` with `your-extension-repo-name` (kebab-case)
+  - Update ownership information and other relevant fields as desired
 
 - In `LICENSE`:
 
